@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Graph Sketch – draw graphs, get edge lists &amp; adjacency lists</title>
+<meta name="description" content="Free tool for competitive programmers: paste an edge list to see the graph, or draw it with your finger or Apple Pencil and copy the edge list, adjacency list or matrix.">
+<meta property="og:title" content="Graph Sketch – edge list ⇄ drawn graph">
+<meta property="og:description" content="Paste edges to visualize a graph, or sketch one and get edges / adjacency list / matrix for your code.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#2f6fed">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌳%3C/text%3E%3C/svg%3E">
+<style>
+:root{--bg:#f7f7f5;--fg:#1c1c1a;--card:#fff;--bd:#d6d6cf;--ac:#2f6fed;--mut:#6b6b64;--nf:#e8f0ff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161618;--fg:#ececea;--card:#222225;--bd:#3a3a3f;--ac:#6c9bff;--mut:#9a9a94;--nf:#26334d}}
+:root[data-theme="dark"]{--bg:#161618;--fg:#ececea;--card:#222225;--bd:#3a3a3f;--ac:#6c9bff;--mut:#9a9a94;--nf:#26334d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{display:grid;grid-template-columns:minmax(260px,340px) 1fr;gap:12px;padding:12px;max-width:1200px;margin:auto}
+@media(max-width:760px){.wrap{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px}
+h1{font-size:17px;margin:0 0 8px}
+label{display:block;font-size:12px;color:var(--mut);margin:10px 0 4px}
+textarea,select{width:100%;background:var(--bg);color:var(--fg);border:1px solid var(--bd);border-radius:6px;padding:8px;font:13px ui-monospace,Menlo,Consolas,monospace}
+textarea{height:130px;resize:vertical}#out{height:120px}
+button{background:var(--card);color:var(--fg);border:1px solid var(--bd);border-radius:8px;padding:8px 12px;font:inherit;font-size:14px;cursor:pointer;transition:background .15s,transform .1s}
+button:active{transform:scale(.95)}
+button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.row label{display:inline-flex;gap:4px;align-items:center;margin:6px 8px 0 0;color:var(--fg)}
+#hint{font-size:12px;color:var(--mut);margin:8px 0 0}
+svg{width:100%;height:68vh;min-height:380px;background:var(--card);border:1px solid var(--bd);border-radius:10px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;display:block}
+.e{stroke:var(--mut);stroke-width:2.5;stroke-linecap:round}.hit{stroke:transparent;stroke-width:14}
+.arw{fill:var(--mut)}
+.n{fill:var(--nf);stroke:var(--ac);stroke-width:2.5}
+text{fill:var(--fg);font-size:13px;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.ink{fill:none;stroke:var(--ac);stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
+.in,.n.pop{transform-box:fill-box;transform-origin:center}
+.n.pop{animation:pop .4s cubic-bezier(.2,.9,.3,1.3) both}
+.e.new{stroke-dasharray:1;animation:drw .35s ease-out both}
+.ink.done{animation:fade .3s ease-out both}
+.nd.out .in{animation:out .25s ease-in both}.eg.out{animation:fade .25s both}
+@keyframes pop{0%{transform:scale(.2);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes drw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes fade{to{opacity:0}}
+@keyframes out{to{transform:scale(.1);opacity:0}}
+.how{max-width:1200px;margin:0 auto;padding:4px 16px 24px}.how h2{font-size:16px}.how code{background:var(--card);border:1px solid var(--bd);border-radius:4px;padding:1px 4px}.foot{color:var(--mut);font-size:12px}
+</style></head><body>
+<div class="wrap">
+<div>
+<div class="card">
+<h1>Edge list ⇄ Graph</h1>
+<label>Edge list (type here, or draw and it updates)</label>
+<textarea id="inp" spellcheck="false"></textarea>
+<div class="row"><label><input type="checkbox" id="dir"> Directed</label><label><input type="checkbox" id="zero"> 0-indexed</label></div>
+<label>Header line when drawing</label>
+<select id="hdr"><option value="nm">n m</option><option value="n">n</option><option value="none">none</option></select>
+</div>
+<div class="card" style="margin-top:12px">
+<label style="margin-top:0">Output format</label>
+<select id="fmt"><option value="list">Adjacency list (text)</option><option value="mat">Adjacency matrix</option><option value="py">Python adj (0-indexed)</option><option value="cpp">C++ vector&lt;vector&lt;int&gt;&gt; (0-indexed)</option></select>
+<label>Result</label><textarea id="out" readonly spellcheck="false"></textarea>
+<div class="row" style="margin-top:8px"><button id="cp">Copy output</button><button id="cpe">Copy edge list</button></div>
+</div></div>
+<div>
+<div class="row" style="margin-bottom:8px">
+<button data-m="draw" class="on">✏️ Draw</button><button data-m="move">✋ Move</button><button data-m="erase">🧽 Erase</button>
+<span style="flex:1"></span><button id="undo">↩︎ Undo</button><button id="lay">Auto layout</button><button id="clr">Clear</button>
+</div>
+<svg id="svg"></svg>
+<p id="hint"></p>
+</div></div>
+<section class="how"><h2>How to use</h2>
+<ol><li><b>Edge list → graph:</b> type or paste edges (<code>n m</code> then <code>u v</code> lines) in the box.</li>
+<li><b>Draw → edge list:</b> sketch a circle for a node, a line between two nodes for an edge, or tap to drop a node. Scribble over something to rub it out.</li>
+<li><b>Copy</b> the edge list, adjacency list, matrix, Python or C++ output straight into your code.</li></ol>
+<p class="foot">Runs entirely in your browser. Nothing is uploaded or stored.</p></section>
+<script>
+const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg',svg=$('svg'),R=18;
+svg.innerHTML='<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="arw"/></marker></defs>';
+const el=(t,c,p)=>{const e=document.createElementNS(NS,t);if(c)e.setAttribute('class',c);if(p)p.appendChild(e);return e};
+const EL=el('g',0,svg),NL=el('g',0,svg),IL=el('g',0,svg);
+let nodes=[],edges=[],mode='draw',drag=null,pts=null,ink=null,penSeen=false,hist=[],raf=0;
+const base=()=>$('zero').checked?0:1,D=()=>$('dir').checked,W=()=>svg.clientWidth||600,H=()=>svg.clientHeight||400;
+const hints={draw:'Draw a circle = node. Draw a line from one circle to another = edge (direction follows your stroke). Tap = node. Scribble back and forth over something to rub it out.',move:'Drag a node to move it.',erase:'Rub the Pencil over nodes or edges to erase them.'};
+
+function mkNode(x,y,pop){const g=el('g','nd',NL),i=el('g','in',g),c=el('circle',pop?'n pop':'n',i);c.setAttribute('r',R);const t=el('text',0,i);return{x,y,g,t}}
+function mkEdge(a,b,fresh){const g=el('g','eg',EL),l=el('line','e'+(fresh?' new':''),g);l.setAttribute('pathLength',1);return{a,b,g,l,h:el('line','hit',g)}}
+const ei=()=>edges.map(e=>[nodes.indexOf(e.a),nodes.indexOf(e.b)]);
+function update(){
+  const bs=base(),dr=D();
+  nodes.forEach((n,i)=>{n.g.setAttribute('transform',`translate(${n.x} ${n.y})`);n.t.textContent=i+bs});
+  edges.forEach(e=>{let dx=e.b.x-e.a.x,dy=e.b.y-e.a.y;const L=Math.hypot(dx,dy)||1;dx/=L;dy/=L;const g=dr?R+3:R;
+    [e.l,e.h].forEach(l=>{l.setAttribute('x1',e.a.x+dx*R);l.setAttribute('y1',e.a.y+dy*R);l.setAttribute('x2',e.b.x-dx*g);l.setAttribute('y2',e.b.y-dy*g)});
+    dr?e.l.setAttribute('marker-end','url(#ar)'):e.l.removeAttribute('marker-end')});
+}
+function load(P,E){EL.innerHTML='';NL.innerHTML='';nodes=P.map(p=>mkNode(p.x,p.y,p.pop));edges=E.map(([a,b])=>mkEdge(nodes[a],nodes[b]));update()}
+function save(){hist.push(JSON.stringify({P:nodes.map(n=>({x:n.x,y:n.y})),E:ei()}));if(hist.length>50)hist.shift()}
+function go(){cancelAnimationFrame(raf);const f=()=>{let m=0;nodes.forEach(n=>{if(n.tx==null)return;const dx=n.tx-n.x,dy=n.ty-n.y;if(Math.hypot(dx,dy)<.5){n.x=n.tx;n.y=n.ty;n.tx=null}else{n.x+=dx*.16;n.y+=dy*.16;m=1}});update();if(m)raf=requestAnimationFrame(f)};f()}
+
+function layout(circ){
+  const w=W(),h=H(),n=nodes.length,k=Math.sqrt(w*h/Math.max(n,1))*.7;
+  nodes.forEach((p,i)=>{if(circ){const a=6.283*i/n;p.tx=w/2+Math.cos(a)*Math.min(w,h)/3;p.ty=h/2+Math.sin(a)*Math.min(w,h)/3}else{p.tx=p.x;p.ty=p.y}});
+  for(let t=0;t<300;t++){const T=1-t/300;
+    nodes.forEach(p=>{p.dx=(w/2-p.tx)*.01;p.dy=(h/2-p.ty)*.01});
+    for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const a=nodes[i],b=nodes[j];let dx=a.tx-b.tx,dy=a.ty-b.ty;const d=Math.hypot(dx,dy)||.1,f=k*k/d;dx/=d;dy/=d;a.dx+=dx*f;a.dy+=dy*f;b.dx-=dx*f;b.dy-=dy*f}
+    edges.forEach(e=>{const a=e.a,b=e.b;let dx=a.tx-b.tx,dy=a.ty-b.ty;const d=Math.hypot(dx,dy)||.1,f=d*d/k;dx/=d;dy/=d;a.dx-=dx*f;a.dy-=dy*f;b.dx+=dx*f;b.dy+=dy*f});
+    nodes.forEach(p=>{const d=Math.hypot(p.dx,p.dy)||1,m=Math.min(d,20*T+1);p.tx=Math.min(w-30,Math.max(30,p.tx+p.dx/d*m));p.ty=Math.min(h-30,Math.max(30,p.ty+p.dy/d*m))})}
+  go();
+}
+
+function text(){const b=base(),h=$('hdr').value,L=[];if(h==='nm')L.push(nodes.length+' '+edges.length);else if(h==='n')L.push(String(nodes.length));ei().forEach(e=>L.push((e[0]+b)+' '+(e[1]+b)));return L.join('\n')}
+function writeOut(){
+  const n=nodes.length,b=base(),f=$('fmt').value,A=nodes.map(()=>[]);
+  ei().forEach(([a,c])=>{A[a].push(c);if(!D())A[c].push(a)});A.forEach(x=>x.sort((p,q)=>p-q));
+  let o;
+  if(f==='list')o=A.map((x,i)=>(i+b)+': '+x.map(v=>v+b).join(' ')).join('\n');
+  else if(f==='mat'){const M=nodes.map(()=>Array(n).fill(0));A.forEach((x,i)=>x.forEach(v=>M[i][v]=1));o=M.map(r=>r.join(' ')).join('\n')}
+  else if(f==='py')o='adj = ['+A.map(x=>'['+x.join(', ')+']').join(', ')+']';
+  else o='vector<vector<int>> adj = {'+A.map(x=>'{'+x.join(', ')+'}').join(', ')+'};';
+  $('out').value=o;
+}
+function sync(){update();$('inp').value=text();writeOut()}
+
+function parse(fresh){
+  const lines=$('inp').value.split('\n').map(l=>l.trim().split(/[\s,]+/).filter(Boolean).map(Number).filter(Number.isInteger)).filter(a=>a.length);
+  let hn=0;
+  if(lines.length){if(lines[0].length===1){hn=lines[0][0];lines.shift()}else if(lines[0].length===2&&lines.length-1===lines[0][1]){hn=lines[0][0];lines.shift()}}
+  const E=lines.filter(a=>a.length>=2);
+  if(E.some(e=>e[0]===0||e[1]===0))$('zero').checked=true;
+  const b=base();let mx=Math.max(0,hn);
+  E.forEach(e=>{mx=Math.max(mx,e[0]-b+1,e[1]-b+1)});mx=Math.min(mx,300);
+  const old=nodes.length,P=[];
+  for(let i=0;i<mx;i++){const o=nodes[i];P.push(o&&!fresh?{x:o.x,y:o.y}:{x:W()/2+(Math.random()-.5)*40,y:H()/2+(Math.random()-.5)*40,pop:1})}
+  load(P,E.map(e=>[e[0]-b,e[1]-b]).filter(e=>e[0]>=0&&e[1]>=0&&e[0]<mx&&e[1]<mx&&e[0]!==e[1]));
+  if(fresh||mx-old>mx/2)layout(true);
+  else{for(let i=old;i<mx;i++){nodes[i].tx=60+Math.random()*(W()-120);nodes[i].ty=60+Math.random()*(H()-120)}go()}
+  writeOut();
+}
+
+['touchstart','touchmove'].forEach(t=>svg.addEventListener(t,e=>e.preventDefault(),{passive:false}));
+svg.addEventListener('contextmenu',e=>e.preventDefault());
+svg.addEventListener('gesturestart',e=>e.preventDefault());
+const pt=e=>{const r=svg.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
+const dseg=(px,py,a,b)=>{const dx=b.x-a.x,dy=b.y-a.y,l=dx*dx+dy*dy||1,t=Math.max(0,Math.min(1,((px-a.x)*dx+(py-a.y)*dy)/l));return Math.hypot(px-a.x-t*dx,py-a.y-t*dy)};
+const nodeAt=(x,y,r)=>{let best=null,bd=r;nodes.forEach(n=>{const d=Math.hypot(n.x-x,n.y-y);if(d<bd){bd=d;best=n}});return best};
+const has=(a,b)=>edges.some(e=>(e.a===a&&e.b===b)||(!D()&&e.a===b&&e.b===a));
+const gone=g=>{g.classList.add('out');setTimeout(()=>g.remove(),260)};
+function delNode(n){nodes.splice(nodes.indexOf(n),1);gone(n.g);edges=edges.filter(e=>{if(e.a===n||e.b===n){gone(e.g);return false}return true})}
+function delEdge(e){edges.splice(edges.indexOf(e),1);gone(e.g)}
+function rub(x,y){let hit=0;nodes.slice().forEach(n=>{if(Math.hypot(n.x-x,n.y-y)<R+6){delNode(n);hit=1}});edges.slice().forEach(e=>{if(dseg(x,y,e.a,e.b)<10){delEdge(e);hit=1}});return hit}
+function path(p){let d='M'+p[0][0]+' '+p[0][1];for(let i=1;i<p.length-1;i++)d+=`Q${p[i][0]} ${p[i][1]} ${(p[i][0]+p[i+1][0])/2} ${(p[i][1]+p[i+1][1])/2}`;const l=p[p.length-1];return d+`L${l[0]} ${l[1]}`}
+function addNode(x,y){nodes.push(mkNode(x,y,1));sync()}
+
+function classify(p){
+  let L=0,x0=1e9,x1=-1e9,y0=1e9,y1=-1e9,dir=0,run=0,rev=0;
+  p.forEach((q,i)=>{x0=Math.min(x0,q[0]);x1=Math.max(x1,q[0]);y0=Math.min(y0,q[1]);y1=Math.max(y1,q[1]);
+    if(!i)return;L+=Math.hypot(q[0]-p[i-1][0],q[1]-p[i-1][1]);
+    const d=q[0]-p[i-1][0];if(!d)return;const s=d>0?1:-1;
+    if(s===dir)run+=Math.abs(d);else{if(dir&&run>12)rev++;dir=s;run=Math.abs(d)}});
+  const w=x1-x0,h=y1-y0,diag=Math.hypot(w,h),s=p[0],f=p[p.length-1];
+  if(L<10){if(!nodeAt(s[0],s[1],R*1.6)){save();addNode(s[0],s[1])}return}
+  if(rev>=3&&L>2.2*diag){save();let hit=0;
+    nodes.slice().forEach(n=>{if(n.x>x0-10&&n.x<x1+10&&n.y>y0-10&&n.y<y1+10){delNode(n);hit=1}});
+    edges.slice().forEach(e=>{if(p.some(q=>dseg(q[0],q[1],e.a,e.b)<10)){delEdge(e);hit=1}});
+    if(hit)sync();else hist.pop();return}
+  if(Math.hypot(s[0]-f[0],s[1]-f[1])<Math.max(30,.3*L)&&w>22&&h>22&&w/h<2&&h/w<2&&L>diag*1.9){
+    const cx=(x0+x1)/2,cy=(y0+y1)/2;if(!nodeAt(cx,cy,R*1.5)){save();addNode(cx,cy)}return}
+  const a=nodeAt(s[0],s[1],R+14),b=nodeAt(f[0],f[1],R+14);
+  if(a&&b&&a!==b&&!has(a,b)){save();edges.push(mkEdge(a,b,1));sync()}
+}
+
+svg.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='pen')penSeen=true;else if(penSeen&&mode!=='move')return;
+  const[x,y]=pt(e);
+  if(mode==='move'){const n=nodes.find(n=>n.g===e.target.closest('.nd'));if(n){save();drag=n;n.tx=null;svg.setPointerCapture(e.pointerId)}return}
+  svg.setPointerCapture(e.pointerId);pts=[[x,y]];
+  if(mode==='draw')ink=el('path','ink',IL);else{save();if(rub(x,y))sync()}
+});
+svg.addEventListener('pointermove',e=>{
+  if(drag){const[x,y]=pt(e);drag.x=Math.max(R,Math.min(W()-R,x));drag.y=Math.max(R,Math.min(H()-R,y));update();return}
+  if(!pts)return;
+  const evs=e.getCoalescedEvents&&e.getCoalescedEvents().length?e.getCoalescedEvents():[e];
+  for(const ev of evs){const[x,y]=pt(ev),l=pts[pts.length-1];if(Math.hypot(x-l[0],y-l[1])<2)continue;pts.push([x,y]);if(mode==='erase'&&rub(x,y))sync()}
+  if(ink&&pts.length>1)ink.setAttribute('d',path(pts));
+});
+['pointerup','pointercancel'].forEach(t=>svg.addEventListener(t,()=>{
+  if(drag){drag=null;sync();return}
+  if(!pts)return;const p=pts;pts=null;
+  if(ink){const i=ink;ink=null;i.classList.add('done');setTimeout(()=>i.remove(),320);classify(p)}
+}));
+
+document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;document.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x===b));$('hint').textContent=hints[mode]});
+$('undo').onclick=()=>{const s=hist.pop();if(s){const o=JSON.parse(s);load(o.P,o.E);sync()}};
+$('lay').onclick=()=>layout(false);
+$('clr').onclick=()=>{save();load([],[]);sync()};
+let tm;$('inp').addEventListener('input',()=>{clearTimeout(tm);tm=setTimeout(()=>parse(false),250)});
+['dir','zero','hdr'].forEach(id=>$(id).onchange=sync);$('fmt').onchange=writeOut;
+function copy(t){try{navigator.clipboard.writeText(t).catch(()=>fb(t))}catch(e){fb(t)}}
+function fb(t){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy')}catch(e){}a.remove()}
+$('cp').onclick=()=>copy($('out').value);$('cpe').onclick=()=>copy($('inp').value);
+$('hint').textContent=hints.draw;
+$('inp').value='5 4\n1 2\n1 3\n3 4\n3 5';
+parse(true);
+</script></body></html>
